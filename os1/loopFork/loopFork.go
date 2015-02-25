@@ -19,12 +19,12 @@ func childProcess() {
 	for i := 1; i <= 200; i++ {
 		fmt.Println("This line is from child, value = ", i)
 	}
-	fmt.Println("*** Child process is done ***")
+	fmt.Println(" *** Child process is done *** ")
 }
 
 func parentProcess() {
 	for i := 1; i <= 200; i++ {
 		fmt.Println("This line is from parent, value = ", i)
 	}
-	fmt.Println("*** Parent process is done ***")
+	fmt.Println(" *** Parent process is done *** ")
 }
