@@ -10,7 +10,7 @@ int main(void)
     pid_t x;
 
 
-    for (i = 5; i > 0; i--) {
+    for (i = 5; i > 1; i--) {
         fact = fact * i;
         printf("Fact -> %d\n", fact);
 
