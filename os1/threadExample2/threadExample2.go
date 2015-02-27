@@ -2,30 +2,45 @@ package main
 
 import (
 	"fmt"
-	"os"
 )
 
-func routineX(x chan string) {
-	for i := 0; i <= 1000; i++ {
-		fmt.Print("x")
+// send "x" to channel c
+func routineX(c chan string, done chan bool) {
+	for {
+		select {
+		case c <- "x":
+		case <-done:
+			return
+		}
 	}
-	//close(x)
 }
 
-func routineO(x chan string) {
-	for i := 0; i <= 1000; i++ {
-		fmt.Print("o")
+// send "o" to channel c
+func routineO(c chan string, done chan bool) {
+	for {
+		select {
+		case c <- "o":
+		case <-done:
+			return
+		}
 	}
-	//close(o)
 }
 
 func main() {
 
-	xCh := make(chan string)
-	//oCh := make(chan string)
+	strCh := make(chan string)
+	doneCh := make(chan bool)
 
-	go routineX(xCh)
-	routineO(xCh)
+	go routineX(strCh, doneCh)
+	go routineO(strCh, doneCh)
 
-	defer os.Exit(0)
+	for i := 1; i <= 10; i++ {
+		go fmt.Printf("%s", <-strCh)
+	}
+	for k := 1; k <= 10; k++ {
+		go fmt.Printf("%s", <-strCh)
+	}
+
+	defer fmt.Printf("\n")
+
 }
