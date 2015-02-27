@@ -8,7 +8,7 @@ import (
 // routineX prints "x" 10 times
 func routineX(wgX *sync.WaitGroup) {
 	for i := 1; i <= 10; i++ {
-		fmt.Printf("x")
+		fmt.Print("x")
 	}
 	wgX.Done() // flag the routine's end
 }
