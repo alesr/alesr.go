@@ -7,7 +7,7 @@ import (
 
 // routineX prints "x" 10 times
 func routineX(wgX *sync.WaitGroup) {
-	for i := 1; i <= 10; i++ {
+	for i := 1; i <= 100; i++ {
 		fmt.Print("x")
 	}
 	wgX.Done() // flag the routine's end
@@ -15,7 +15,7 @@ func routineX(wgX *sync.WaitGroup) {
 
 // routineO prints "o" 10 times
 func routineO(wgO *sync.WaitGroup) {
-	for i := 1; i <= 10; i++ {
+	for i := 1; i <= 100; i++ {
 		fmt.Print("o")
 	}
 	wgO.Done() // flag the routine's end
