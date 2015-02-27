@@ -1,28 +1,31 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
-func routineX(c chan string) {
-	for i := 0; i <= 100; i++ {
-		c <- "X"
+func routineX(x chan string) {
+	for i := 0; i <= 1000; i++ {
+		fmt.Print("x")
 	}
+	//close(x)
 }
 
-func routineO(c chan string) {
-	for i := 0; i <= 100; i++ {
-		c <- "O"
+func routineO(x chan string) {
+	for i := 0; i <= 1000; i++ {
+		fmt.Print("o")
 	}
+	//close(o)
 }
 
 func main() {
-	strChannel := make(chan string)
 
-	go routineX(strChannel)
-	go routineO(strChannel)
+	xCh := make(chan string)
+	//oCh := make(chan string)
 
-	for s := range strChannel {
-		fmt.Print(s)
-	}
-	// defer close(strChannel)
-	// defer fmt.Printf("\n")
+	go routineX(xCh)
+	routineO(xCh)
+
+	defer os.Exit(0)
 }
