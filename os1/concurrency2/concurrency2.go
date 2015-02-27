@@ -28,12 +28,13 @@ func routineO(c chan string, done chan bool) {
 
 func main() {
 
-	strCh := make(chan string)
+	strCh := make(chan string) // create a string channel
 	doneCh := make(chan bool)
 
 	go routineX(strCh, doneCh)
 	go routineO(strCh, doneCh)
 
+	// print time
 	for i := 1; i <= 10; i++ {
 		go fmt.Printf("%s", <-strCh)
 	}
