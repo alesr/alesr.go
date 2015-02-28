@@ -25,27 +25,27 @@ func checkErr(msg string, err error) {
 }
 
 // starts the magic
-func run(filename string) {
+func run(filename string, outputName string) {
 	// open file
 	inputFile, err := os.Open(filename)
 	checkErr("Not possible to open this file.\n", err)
 	defer inputFile.Close()
-	loadFile(inputFile)
+	reWrite(loadFile(inputFile), outputName)
 }
 
 // read file and store data on a temp string
-func loadFile(inputFile *os.File) {
+func loadFile(inputFile *os.File) string {
 	var content string
 	scan := bufio.NewScanner(inputFile)
 	for scan.Scan() {
 		l := scan.Text()
 		content += reverseString.ReverseString(l) + "\n"
 	}
-	reWrite(content)
+	return content
 }
 
 // write data on a brand new shiny file
-func reWrite(content string) *os.File {
+func reWrite(content string, outputName string) *os.File {
 	// create file
 	outputFile, err := os.Create(outputName)
 	checkErr("Some nasty error to create the file.\n", err)
@@ -62,7 +62,6 @@ func main() {
     usage()
     os.Exit(1)
   } else {
-    outputName := os.Args(3)
-    run(os.Args[1])
+    run(os.Args[1], os.Args[2])
   }
 }
