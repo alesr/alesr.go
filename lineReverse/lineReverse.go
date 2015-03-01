@@ -4,16 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/alesr/alesr.go.lib/string/reverseString"
+	"log"
 	"os"
-  "log"
 )
-
-var outputName string
 
 // in case you don't know
 func usage() {
-  log.Println("Usage: enter input.txt and output.txt (to be created)")
-  log.Println("eg. ./ioTest myFile.txt myNewFile.txt")
+	log.Println("Usage: enter input.txt and output.txt (to be created)")
+	log.Println("eg. ./ioTest myFile.txt myNewFile.txt")
 }
 
 // check and output error
@@ -58,10 +56,10 @@ func reWrite(content string, outputName string) *os.File {
 }
 
 func main() {
-  if len(os.Args) < 3 { // check the console input
-    usage()
-    os.Exit(1)
-  } else {
-    run(os.Args[1], os.Args[2])
-  }
+	if len(os.Args) < 3 { // check the console input
+		usage()
+		os.Exit(1)
+	} else {
+		run(os.Args[1], os.Args[2])
+	}
 }

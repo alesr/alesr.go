@@ -1,6 +1,6 @@
 package lightEnigma
 
-// EnigmaON - Comments come soon...
+// EnigmaON - shift k bytes foward
 func EnigmaON(word string, k uint8) string {
 	var enigON []byte
 	for letter := range word {
@@ -10,7 +10,7 @@ func EnigmaON(word string, k uint8) string {
 	return enigONstr
 }
 
-// EnigmaOFF - Comments come soon...
+// EnigmaOFF - shift k bytes backward
 func EnigmaOFF(enigON string, k uint8) string {
 	var enigOFF []byte
 	for letter := range enigON {
