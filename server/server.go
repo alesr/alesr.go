@@ -1,33 +1,28 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
-	"net/http"	
+	"net/http"
 )
 
 func main() {
-	// command line flags
-	port := flag.Int("port", 80, "port to serve on")  // default is 80
-	dir := flag.String("directory", "web/", "directory for web files") // default is /web
-	flag.Parse()
-
+	 
 	// handle requests serving a file of the same name
-	fs := http.Dir(*dir)
+	fs := http.Dir("html/")
 	handler := http.FileServer(fs)
 	http.Handle("/", handler)
 	http.HandleFunc("/go", handlerGo)
 
-	log.Printf("running on port %d\n", port)
+	log.Print("server running on port 80")
 
-	addr := fmt.Sprintf("127.0.0.1:%d", *port)
+	addr := fmt.Sprintf("127.0.0.1:80")
 
-	// from this block, the program runs forever
+	// from this block, the program runs foreve	r
 	err := http.ListenAndServe(addr, nil)
 	fmt.Println(err.Error())
 }
 
 func handlerGo(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("It's Alive, alive!")
+	log.Print("It's Alive!")
 }

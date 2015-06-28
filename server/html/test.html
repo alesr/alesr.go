@@ -8,12 +8,10 @@
 <body>
 	<h1>It's alive!</h1>
   <script type="text/javascript">
-		function goData(){
- 			var data = "go";
-			alert(data);
- 			$.post("http://127.0.0.1:80/go", data);
+		var go = function (){
+			$.post("http://127.0.0.1:80/go");
 		}	
-		setTimeout(goData, 2000);	
+		setTimeout(go, 2000);	
 	</script>
 </body>
 </html>
