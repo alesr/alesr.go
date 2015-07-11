@@ -4,7 +4,7 @@ import "testing"
 
 func TestFibonacciGen(t *testing.T) {
 	var result int
-	var c chan int = FibonacciGen()
+	var c = FibonacciGen()
 	for n := 0; n < 12; n++ {
 		result = <-c
 	}
