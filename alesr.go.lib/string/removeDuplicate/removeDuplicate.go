@@ -1,6 +1,6 @@
 package removeDuplicate
 
-// RemoveDuplicate items from array and set it to arr2
+// RemoveDuplicate remove duplicate items from array setting it to arr2
 func RemoveDuplicate(arr []string) []string {
 	arr2 := arr[:1]
 Loop:
