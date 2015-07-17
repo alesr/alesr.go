@@ -19,3 +19,5 @@ func EnigmaOFF(enigON string, k uint8) string {
 	enigOFFstr := string(enigOFF)
 	return enigOFFstr
 }
+
+//
