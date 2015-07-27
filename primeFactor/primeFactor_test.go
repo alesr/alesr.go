@@ -18,10 +18,7 @@ var testCases = []struct {
 func TestPrimeFactor(t *testing.T) {
 	for _, test := range testCases {
 		observed := PrimeFactor(test.p)
-		// if len(observed) != len(test.expected) {
-		// 	t.Error("For p = %d, expected %t. Got %t.",
-		// 		test.p, test.expected, observed)
-		// }
+
 		if !reflect.DeepEqual(observed, test.expected) {
 			t.Error("For p = %d, expected %t. Got %t.",
 				test.p, test.expected, observed)
