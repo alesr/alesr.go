@@ -10,9 +10,9 @@ var testCases = []struct {
 	{"duck", "uckday"},
 }
 
-func TestPigLatinTranslator(t *testing.T) {
+func TestPigTranslator(t *testing.T) {
 	for _, test := range testCases {
-		observed := PigLatinTranslator(test.word)
+		observed := PigTranslator(test.word)
 		if observed != test.expected {
 			t.Errorf("For word %s, expected %s. Got %s",
 				test.word, test.expected, observed)
@@ -20,10 +20,10 @@ func TestPigLatinTranslator(t *testing.T) {
 	}
 }
 
-func BenchmarkPigLatinTranslator(b *testing.B) {
+func BenchmarkPigTranslator(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for _, test := range testCases {
-			PigLatinTranslator(test.word)
+			PigTranslator(test.word)
 		}
 	}
 }

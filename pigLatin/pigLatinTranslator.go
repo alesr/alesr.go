@@ -4,7 +4,8 @@ import "strings"
 
 // "egg" -> "eggway"
 // "pig" -> "igay"
-func PigLatinTranslator(s string) string {
+
+func PigTranslator(s string) string {
 	word := strings.ToLower(s)
 	var latin string
 	switch word[0] {
