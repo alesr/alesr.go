@@ -38,5 +38,4 @@ func TestLineReverse(t *testing.T) {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-
 }
