@@ -14,7 +14,7 @@ func main() {
 	StringScramble(str1, str2)
 }
 
-// Check if str2 is on str1
+// StringScramble checks if str2 is on str1
 func StringScramble(str1, str2 string) bool {
 	str1Len, str2Len := len(str1), len(str2)
 
