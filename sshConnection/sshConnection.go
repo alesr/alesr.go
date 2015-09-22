@@ -4,20 +4,20 @@ import (
 	"io"
 	"log"
 	"os"
-	"github.com/pkg/sftp"
+	"sftp"
 
 	"golang.org/x/crypto/ssh"
 )
 
 func main() {
 	config := &ssh.ClientConfig{
-		User: "appanc",
+		User: "a",
 		Auth: []ssh.AuthMethod{
-			ssh.Password("91827744"),
+			ssh.Password("9"),
 		},
 	}
 
-	client, err := ssh.Dial("tcp", "appanc.org:22", config)
+	client, err := ssh.Dial("tcp", "app:22", config)
 
 	if err != nil {
 		log.Fatal(err)
