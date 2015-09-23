@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 
+	"fmt"
+
 	"github.com/pkg/sftp"
 
 	"golang.org/x/crypto/ssh"
@@ -10,40 +12,39 @@ import (
 
 func main() {
 	config := &ssh.ClientConfig{
-		User: "ap",
+		User: "appanc",
 		Auth: []ssh.AuthMethod{
-			ssh.Password("9"),
+			ssh.Password("91827744"),
 		},
 	}
 
-	client, err := ssh.Dial("tcp", "apporg:22", config)
+	client, err := ssh.Dial("tcp", "appanc.org:22", config)
+	checkError("Failed to dial: ", err)
 
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	sftp, err := sftp.NewClient(client)
+	checkError("Failure over sftp", err)
+	defer sftp.Close()
 
 	session, err := client.NewSession()
 	checkError("Failed to create session: ", err)
-
 	defer session.Close()
 
-	sftp, err := sftp.NewClient(client)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer sftp.Close()
+	d, err := sftp.ReadDir("www/www")
+	checkError("Error on reading directory.", err)
 
-	// leave your mark
-	f, err := sftp.Create("hello.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	if _, err := f.Write([]byte("Hello world!")); err != nil {
-		log.Fatal(err)
-	}
+	fmt.Println(len(d))
+	fmt.Println(d[0].Name())
+
+	// var b bytes.Buffer
+	// session.Stdout = &b
+	// if err := session.Run("/usr/bin/whoami"); err != nil {
+  //   panic("Failed to run: " + err.Error())
+	// }
+	// fmt.Println(b.String())
+
 
 }
+
 
 func checkError(msg string, err error) {
 	if err != nil {
