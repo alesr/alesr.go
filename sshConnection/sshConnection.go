@@ -1,12 +1,10 @@
 package main
 
 import (
-	"log"
-
 	"fmt"
-
-	"github.com/pkg/sftp"
-
+	"log"
+	"bytes"
+	//"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -18,32 +16,38 @@ func main() {
 		},
 	}
 
-	client, err := ssh.Dial("tcp", "appanc.org:22", config)
-	checkError("Failed to dial: ", err)
+	command := "cd private && touch hello.txt"
+	conn := connect(command, "appanc.org", "22", config)
 
-	sftp, err := sftp.NewClient(client)
-	checkError("Failure over sftp", err)
-	defer sftp.Close()
-
-	session, err := client.NewSession()
-	checkError("Failed to create session: ", err)
-	defer session.Close()
-
-	d, err := sftp.ReadDir("www/www")
-	checkError("Error on reading directory.", err)
-
-	fmt.Println(len(d))
-	fmt.Println(d[0].Name())
-
-	// var b bytes.Buffer
-	// session.Stdout = &b
-	// if err := session.Run("/usr/bin/whoami"); err != nil {
-  //   panic("Failed to run: " + err.Error())
-	// }
-	// fmt.Println(b.String())
-
+	fmt.Println(conn)
 
 }
+
+
+func connect(command string, hostname string, port string, config *ssh.ClientConfig) string {
+	log.Printf("Trying connection...\n")
+
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", hostname, port), config)
+	checkError("Failed to dial: ", err)
+
+	log.Printf("Connection established.\n")
+
+	session, err := conn.NewSession()
+	defer session.Close()
+
+	log.Printf("Session created.\n")
+
+  var stdoutBuf bytes.Buffer
+  session.Stdout = &stdoutBuf
+  if err := session.Run(command); err != nil {
+		log.Fatal("Error on command execution", err.Error())
+	}
+
+	return fmt.Sprint("%s -> %s", hostname, stdoutBuf.String())
+}
+
+
+
 
 
 func checkError(msg string, err error) {
