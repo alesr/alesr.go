@@ -4,22 +4,24 @@ import (
 	"fmt"
 	"log"
 	"bytes"
+	"os"
+	"bufio"
 	//"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
 func main() {
 	config := &ssh.ClientConfig{
-		User: "appanc",
+		User: "a",
 		Auth: []ssh.AuthMethod{
-			ssh.Password("91827744"),
+			ssh.Password("91"),
 		},
 	}
 
-	command := "cd private && touch hello.txt"
-	conn := connect(command, "appanc.org", "22", config)
+	ask4Input()
 
-	fmt.Println(conn)
+	command := "cd private && touch hello.txt"
+	connect(command, "app@org", "22", config)
 
 }
 
@@ -33,6 +35,8 @@ func connect(command string, hostname string, port string, config *ssh.ClientCon
 	log.Printf("Connection established.\n")
 
 	session, err := conn.NewSession()
+	checkError("Failed to build the session: ", err)
+
 	defer session.Close()
 
 	log.Printf("Session created.\n")
@@ -47,7 +51,16 @@ func connect(command string, hostname string, port string, config *ssh.ClientCon
 }
 
 
+func ask4Input() string {
 
+	consolereader := bufio.NewReader(os.Stdin)
+
+	fmt.Println("Project name: ")
+	projectname, err := consolereader.ReadString('\n')
+	checkError("Error getting the project name:", err)
+
+	return projectname
+}
 
 
 func checkError(msg string, err error) {
