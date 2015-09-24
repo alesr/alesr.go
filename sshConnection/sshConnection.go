@@ -12,7 +12,7 @@ import (
 )
 
 type ProjectField struct {
-	fieldName , fieldError string
+	label , errorMsg, validationMsg string
 }
 
 type Project struct {
@@ -30,17 +30,24 @@ func main() {
 
 	project.assemblyLine()
 
-	project.name.fieldError = "error getting the project's name: "
-	project.hostname.fieldError = "error getting the project's hostname: "
-	project.pwd.fieldError = "error getting the project's password: "
-	project.port.fieldError = "error getting the project's port"
-	project.typ.fieldError = "error getting the project's type"
+	project.name.errorMsg = "error getting the project's name: "
+	project.hostname.errorMsg = "error getting the project's hostname: "
+	project.pwd.errorMsg = "error getting the project's password: "
+	project.port.errorMsg = "error getting the project's port"
+	project.typ.errorMsg = "error getting the project's type"
+
+	project.name.validationMsg = "make sure you type a valid name for your project."
+	project.hostname.validationMsg = "make sure you type a valid hostname for your project."
+	project.pwd.validationMsg = "type a valid password. It must contain at least 6 digits"
+	project.port.validationMsg = "type a port between 1 and 999"
+	project.typ.validationMsg = "pay attention to the options"
+
 
 	// SSH connection config
 	config := &ssh.ClientConfig {
-		User: project.name.fieldName,
+		User: project.name.label,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(project.pwd.fieldName),
+			ssh.Password(project.pwd.label),
 		},
 	}
 
@@ -53,7 +60,7 @@ func (p *Project) connect(command string, config *ssh.ClientConfig) {
 
 	log.Printf("Trying connection...\n")
 
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", p.hostname.fieldName, p.port.fieldName), config)
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", p.hostname.label, p.port.label), config)
 	checkError("Failed to dial: ", err)
 	log.Printf("Connection established.\n")
 
@@ -77,28 +84,30 @@ func (p *Project) connect(command string, config *ssh.ClientConfig) {
 func (p *Project) assemblyLine() {
 
 
-	p.name.fieldName = ask4Input("project name: ", p.name.fieldError)
+	// Project name
+	p.name.label = ask4Input("project name: ", p.name.errorMsg)
+	valid := checkInput(p.name.label, "name")
+	p.check4ValidInput(valid, "name")
 
-	message, valid := checkInput(p.name.fieldName, "name")
+	// Hostname
+	p.hostname.label = ask4Input("hostname: ", p.hostname.errorMsg)
+	valid = checkInput(p.hostname.label, "hostname")
+	p.check4ValidInput(valid, "hostname")
 
-	if !valid {
-		fmt.Println(message)
-		p.name.fieldName = ask4Input("project name: ", p.name.fieldError)
-	}
+	// Password
+	p.pwd.label = ask4Input("Password: ", p.pwd.errorMsg)
+	valid = checkInput(p.hostname.label, "pwd")
+	p.check4ValidInput(valid, "pwd")
 
-	// hostnameError := "error getting the project's hostname: "
-	p.hostname.fieldName = ask4Input("hostname: ", p.hostname.fieldError)
+	// Port
+	p.port.label = ask4Input("port (default 22): ", p.port.errorMsg)
+	valid = checkInput(p.hostname.label, "port")
+	p.check4ValidInput(valid, "port")
 
-	message, valid = checkInput(p.hostname.fieldName, "hostname")
-
-	if !valid {
-		fmt.Println(message)
-		p.hostname.fieldName = ask4Input("hostname: ", p.hostname.fieldError)
-	}
-
-	p.pwd.fieldName = ask4Input("Password: ", p.pwd.fieldError)
-	p.port.fieldName = ask4Input("port (default 22): ", p.port.fieldError)
-	p.typ.fieldName = ask4Input("project type [1]yii [2]wp or gohugo: ", p.typ.fieldError)
+	// Type
+	p.typ.label = ask4Input("project type [1]yii [2]wp or gohugo: ", p.typ.errorMsg)
+	valid = checkInput(p.hostname.label, "type")
+	p.check4ValidInput(valid, "type")
 }
 
 // Takes the assemblyLine's data and mount the prompt for the user.
@@ -125,28 +134,30 @@ func checkError(msg string, err error) {
 
 
 // WAITING FOR REFACTORING
-func checkInput(input, kind string) (string, bool) {
+func checkInput(input, kind string) bool {
 	switch kind {
-
 		case "name":
 			if len(input) <= 2 {
-				return "make sure you type a valid name for your project.", false
+				return false
 			}
-
 		case "hostname":
 			if len(input) <= 5 {
-				return "make sure you type a valid hostname for your project.", false
+				return false
 			}
-
-			if hasDigits(input) {
-				return "the hostname must not contain digits", false
+		case "pwd":
+			if len(input) <= 6 {
+				return false
 			}
-
-			// Em construção. Terminar validação dos restantes inputs...
-
+		case "port":
+			if len(input) == 0 {
+				return false
+			}
+		case "type":
+			if len(input) == 0 || len(input) > 1{
+				return false
+			}
 	}
-
-	return "", true
+	return true
 
 }
 
@@ -158,4 +169,11 @@ func hasDigits(input string) bool {
 		}
 	}
 	return false
+}
+// fmt.Sprintf("%s:%s", p.hostname.label, p.port.label)
+func (p *Project) check4ValidInput(flag bool, kind string)  {
+	if !flag {
+		fmt.Println(p.name.validationMsg)
+		p.name.label = ask4Input("project name: ", p.name.errorMsg)
+	}
 }
