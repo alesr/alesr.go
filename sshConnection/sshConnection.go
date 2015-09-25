@@ -11,7 +11,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-
 // DEBUG ALERT --> Uma instalação contemém métodos relacionados aos comandos.
 // e.g. adicionar comando, executar commando, ...
 // Yii é um tipo de Programa que contém commandos e implementa a interface
@@ -31,7 +30,7 @@ type Program struct {
 
 type Project struct {
 	projectname, hostname, pwd, port ProjectField
-	typ Program
+	typ                              Program
 }
 
 type Installer interface {
@@ -43,12 +42,10 @@ func main() {
 	// Initialization
 	project := new(Project)
 
-
-
 	project.assemblyLine()
 
 	// SSH connection config
-	config := &ssh.ClientConfig {
+	config := &ssh.ClientConfig{
 		User: project.projectname.name,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(project.pwd.name),
@@ -109,14 +106,12 @@ func ask4Input(field *ProjectField) {
 	checkInput(field, input)
 }
 
-
 // Right on hand error checker.
 func checkError(msg string, err error) {
 	if err != nil {
 		log.Fatal(msg, err.Error())
 	}
 }
-
 
 func checkInput(field *ProjectField, input string) {
 
@@ -129,44 +124,43 @@ func checkInput(field *ProjectField, input string) {
 	}
 
 	switch field.label {
-		case "projectname":
+	case "projectname":
 
-			if inputLength < 3 || inputLength > 20 {
-				fmt.Println(field.validationMsg)
-				ask4Input(field)
-			}
-		case "hostname":
-			if inputLength <= 5 {
-				fmt.Println(field.validationMsg)
-				ask4Input(field)
-			}
-		case "pwd":
-			if inputLength <= 6 {
-				fmt.Println(field.validationMsg)
-				ask4Input(field)
-			}
-		case "port":
+		if inputLength < 3 || inputLength > 20 {
+			fmt.Println(field.validationMsg)
+			ask4Input(field)
+		}
+	case "hostname":
+		if inputLength <= 5 {
+			fmt.Println(field.validationMsg)
+			ask4Input(field)
+		}
+	case "pwd":
+		if inputLength <= 6 {
+			fmt.Println(field.validationMsg)
+			ask4Input(field)
+		}
+	case "port":
 
-			if inputLength == 0 {
-				cleanInput = "22"
-			} else if inputLength > 3 {
-				fmt.Println(field.validationMsg)
-				ask4Input(field)
-			}
-		case "type":
-			if cleanInput != "1" && cleanInput != "2" {
-				fmt.Println(field.validationMsg)
-				ask4Input(field)
-			} else if cleanInput == "1" {
-				cleanInput = "Yii"
-			} else if cleanInput == "2" {
-				cleanInput = "WP"
-			}
+		if inputLength == 0 {
+			cleanInput = "22"
+		} else if inputLength > 3 {
+			fmt.Println(field.validationMsg)
+			ask4Input(field)
+		}
+	case "type":
+		if cleanInput != "1" && cleanInput != "2" {
+			fmt.Println(field.validationMsg)
+			ask4Input(field)
+		} else if cleanInput == "1" {
+			cleanInput = "Yii"
+		} else if cleanInput == "2" {
+			cleanInput = "WP"
+		}
 	}
 
 	field.name = cleanInput
 }
-
 
 func (p *Project) connect(commands []string, config *ssh.ClientConfig) {
 
