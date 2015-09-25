@@ -11,36 +11,32 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// DEBUG ALERT --> Uma instalação contemém métodos relacionados aos comandos.
-// e.g. adicionar comando, executar commando, ...
-// Yii é um tipo de Programa que contém commandos e implementa a interface
-// Installer.
-// Wp é outro tipo de Programa que contém commandos e implementa a interface
-// Installer.
-// Quaisquer novos sotfwares a serem instalados por este programas deverão ser
-// do tipo Programa e implementar a interface Installer.
-type ProjectField struct {
+type projectField struct {
 	name, label, inputQuestion, errorMsg, validationMsg string
+	program                                             program
 }
 
-type Program struct {
-	ProjectField
-	commands []string
+type program struct {
+	setup []string
 }
 
-type Project struct {
-	projectname, hostname, pwd, port ProjectField
-	typ                              Program
+type project struct {
+	projectname, hostname, pwd, port, typ projectField
 }
 
-type Installer interface {
-	connect()
+var commonSteps = []string{"cd private && echo 'hello world' > hello.txt"}
+var yiiSteps = []string{
+	"cd private && echo 'hello world' > hello1.txt",
+	"cd private && echo 'hello world' > hello2.txt",
+	"cd private && echo 'hello world' > hello3.txt",
+	"cd private && echo 'hello world' > hello4.txt",
 }
+var wpSteps = []string{"cd private && echo 'hello world' > hello.txt"}
 
 func main() {
 
 	// Initialization
-	project := new(Project)
+	project := new(project)
 
 	project.assemblyLine()
 
@@ -52,16 +48,14 @@ func main() {
 		},
 	}
 
-	// commands := []string{
-	// 	"cd private && echo 'hello world' > hello.txt",
-	// 	}
-	// project.connect(commands, config)
+	project.typ.program.setup = yiiSteps
+
+	project.connect(config)
 
 }
 
-func (p *Project) assemblyLine() {
-
-	// Project name
+func (p *project) assemblyLine() {
+	// project name
 	p.projectname.inputQuestion = "project name: "
 	p.projectname.label = "projectname"
 	p.projectname.errorMsg = "error getting the project's name: "
@@ -98,7 +92,7 @@ func (p *Project) assemblyLine() {
 }
 
 // Takes the assemblyLine's data and mount the prompt for the user.
-func ask4Input(field *ProjectField) {
+func ask4Input(field *projectField) {
 	consolereader := bufio.NewReader(os.Stdin)
 	fmt.Print(field.inputQuestion)
 	input, err := consolereader.ReadString('\n')
@@ -106,30 +100,35 @@ func ask4Input(field *ProjectField) {
 	checkInput(field, input)
 }
 
-// Right on hand error checker.
+// A simple error checker.
 func checkError(msg string, err error) {
 	if err != nil {
 		log.Fatal(msg, err.Error())
 	}
 }
 
-func checkInput(field *ProjectField, input string) {
+func checkInput(field *projectField, input string) {
 
 	var cleanInput string
 	var inputLength int
 
-	if len(input) > 1 {
-		cleanInput = strings.Fields(input)[0]
-		inputLength = len(cleanInput)
+	if len(input) < 3 {
+		ask4Input(field)
 	}
+
+	cleanInput = strings.Fields(input)[0]
+	inputLength = len(cleanInput)
+
+	fmt.Println(inputLength)
 
 	switch field.label {
 	case "projectname":
 
-		if inputLength < 3 || inputLength > 20 {
+		if inputLength > 20 {
 			fmt.Println(field.validationMsg)
 			ask4Input(field)
 		}
+
 	case "hostname":
 		if inputLength <= 5 {
 			fmt.Println(field.validationMsg)
@@ -162,7 +161,7 @@ func checkInput(field *ProjectField, input string) {
 	field.name = cleanInput
 }
 
-func (p *Project) connect(commands []string, config *ssh.ClientConfig) {
+func (p *project) connect(config *ssh.ClientConfig) {
 
 	log.Printf("Trying connection...\n")
 
@@ -170,20 +169,25 @@ func (p *Project) connect(commands []string, config *ssh.ClientConfig) {
 	checkError("Failed to dial: ", err)
 	log.Printf("Connection established.\n")
 
+	for step := range p.typ.program.setup {
+		p.install(step, conn)
+	}
+
+}
+
+func (p *project) install(step int, conn *ssh.Client) {
+
 	session, err := conn.NewSession()
 	checkError("Failed to build the session: ", err)
 
 	defer session.Close()
 
-	log.Printf("Session created.\n")
-
 	var stdoutBuf bytes.Buffer
 	session.Stdout = &stdoutBuf
 
-	// log.Printf("Preparing to execute command: %s", commands[0])
-	// if err := session.Run(commands[0]); err != nil {
-	// 	log.Fatal("Error on command execution", err.Error())
-	// }
+	log.Printf("Executing command: %s", p.typ.program.setup[step])
 
-	log.Printf("Preparing to execute command: %s", p.typ.command[0])
+	if err := session.Run(p.typ.program.setup[step]); err != nil {
+		log.Fatal("Error on command execution", err.Error())
+	}
 }
