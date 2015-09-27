@@ -1,23 +1,20 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"log"
-	"os"
-	"strings"
 
 	"golang.org/x/crypto/ssh"
 )
 
+type program struct {
+	setup []string
+}
+
 type projectField struct {
 	name, label, inputQuestion, errorMsg, validationMsg string
 	program                                             program
-}
-
-type program struct {
-	setup []string
 }
 
 type project struct {
@@ -31,7 +28,7 @@ var yiiSteps = []string{
 	"cd private && echo 'hello world' > hello3.txt",
 	"cd private && echo 'hello world' > hello4.txt",
 }
-var wpSteps = []string{"cd private && echo 'hello world' > hello.txt"}
+var wpSteps = []string{"cd private && echo 'hello world' > hello7.txt"}
 
 func main() {
 
@@ -48,7 +45,11 @@ func main() {
 		},
 	}
 
-	project.typ.program.setup = yiiSteps
+	if project.typ.name == "Yii" {
+		project.typ.program.setup = yiiSteps
+	} else {
+		project.typ.program.setup = wpSteps
+	}
 
 	project.connect(config)
 
@@ -93,10 +94,20 @@ func (p *project) assemblyLine() {
 
 // Takes the assemblyLine's data and mount the prompt for the user.
 func ask4Input(field *projectField) {
-	consolereader := bufio.NewReader(os.Stdin)
 	fmt.Print(field.inputQuestion)
-	input, err := consolereader.ReadString('\n')
-	checkError(field.errorMsg, err)
+
+	var input string
+	_, err := fmt.Scanln(&input)
+
+	if err != nil && err.Error() == "unexpected newline" && field.label != "port" {
+		ask4Input(field)
+	} else if err != nil && err.Error() == "unexpected newline" {
+		input = "22"
+		checkInput(field, input)
+	} else if err != nil {
+		log.Fatal(field.errorMsg, err)
+	}
+
 	checkInput(field, input)
 }
 
@@ -109,19 +120,7 @@ func checkError(msg string, err error) {
 
 func checkInput(field *projectField, input string) {
 
-	var cleanInput string
-	var inputLength int
-
-	if len(input) < 3 {
-		ask4Input(field)
-	}
-
-	cleanInput = strings.Fields(input)[0]
-	inputLength = len(cleanInput)
-
-	fmt.Println(inputLength)
-
-	switch field.label {
+	switch inputLength := len(input); field.label {
 	case "projectname":
 
 		if inputLength > 20 {
@@ -142,23 +141,23 @@ func checkInput(field *projectField, input string) {
 	case "port":
 
 		if inputLength == 0 {
-			cleanInput = "22"
+			input = "22"
 		} else if inputLength > 3 {
 			fmt.Println(field.validationMsg)
 			ask4Input(field)
 		}
 	case "type":
-		if cleanInput != "1" && cleanInput != "2" {
+		if input != "1" && input != "2" {
 			fmt.Println(field.validationMsg)
 			ask4Input(field)
-		} else if cleanInput == "1" {
-			cleanInput = "Yii"
-		} else if cleanInput == "2" {
-			cleanInput = "WP"
+		} else if input == "1" {
+			input = "Yii"
+		} else if input == "2" {
+			input = "WP"
 		}
 	}
 
-	field.name = cleanInput
+	field.name = input
 }
 
 func (p *project) connect(config *ssh.ClientConfig) {
