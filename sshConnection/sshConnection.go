@@ -23,8 +23,6 @@ type project struct {
 	projectname, hostname, pwd, port, typ projectField
 }
 
-
-
 func main() {
 
 	// Initialization
@@ -45,17 +43,14 @@ func main() {
 
 	var wpSteps = []string{
 		"echo -e '[User]\nname = Pipi, server girl' > .gitconfig",
-		// "cd ~/www/www/ && git init",
-		// "git add . && git commit -m 'on the beginning was the commit'",
-		// "cd ~/private/ && mkdir repos && cd repos",
-		// "mkdir projectname_hub.git && cd projectname_hub.git && git --bare init",
-		// "cd ~/www/www && git remote add hub ~/private/repos/projectname_hub.git && git push hub master",
-		// "cd ~/private/repos/projectname_hub.git/hooks && touch post-update",
-		// "scp post-update-wp " + project.projectname.name + "@" + project.hostname.name + ":/home/" + project.projectname.name + "/private/repos/" + project.projectname.name + "_hub.git/hooks/post-update",
-
+		"cd ~/www/www/ && git init",
+		"cd ~/www/www/ && git add . ",
+		"cd ~/www/www/ && git commit -m 'on the beginning was the commit'",
+		"cd ~/private/ && mkdir repos && cd repos && mkdir projectname_hub.git && cd projectname_hub.git && git --bare init",
+		"cd ~/www/www && git remote add hub ~/private/repos/projectname_hub.git && git push hub master",
+		"cd ~/private/repos/projectname_hub.git/hooks && touch post-update",
+		"scp post-update-wp " + project.projectname.name + "@" + project.hostname.name + ":/home/" + project.projectname.name + "/private/repos/" + project.projectname.name + "_hub.git/hooks/post-update",
 	}
-
-
 
 	// Now we need to know which instalation we going to make.
 	// And once we get to know it, let's load the setup with
@@ -137,12 +132,10 @@ func checkInput(field *projectField, input string) {
 
 	switch inputLength := len(input); field.label {
 	case "projectname":
-
 		if inputLength > 20 {
 			fmt.Println(field.validationMsg)
 			ask4Input(field)
 		}
-
 	case "hostname":
 		if inputLength <= 5 {
 			fmt.Println(field.validationMsg)
@@ -154,7 +147,6 @@ func checkInput(field *projectField, input string) {
 			ask4Input(field)
 		}
 	case "port":
-
 		if inputLength == 0 {
 			input = "22"
 		} else if inputLength > 3 {
@@ -171,7 +163,6 @@ func checkInput(field *projectField, input string) {
 			input = "WP"
 		}
 	}
-
 	field.name = input
 }
 
@@ -186,14 +177,11 @@ func (p *project) connect(config *ssh.ClientConfig) {
 	for step := range p.typ.program.setup {
 		p.install(step, conn)
 	}
-
 }
 
 func (p *project) install(step int, conn *ssh.Client) {
-
 	session, err := conn.NewSession()
 	checkError("Failed to build session: ", err)
-
 	defer session.Close()
 
 	var stdoutBuf bytes.Buffer
