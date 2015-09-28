@@ -3,11 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	"golang.org/x/crypto/ssh"
 )
 
+// A project is made of project field which has a program on it.
 type program struct {
 	setup []string
 }
@@ -21,20 +23,16 @@ type project struct {
 	projectname, hostname, pwd, port, typ projectField
 }
 
-var commonSteps = []string{"cd private && echo 'hello world' > hello.txt"}
-var yiiSteps = []string{
-	"cd private && echo 'hello world' > hello1.txt",
-	"cd private && echo 'hello world' > hello2.txt",
-	"cd private && echo 'hello world' > hello3.txt",
-	"cd private && echo 'hello world' > hello4.txt",
-}
-var wpSteps = []string{"cd private && echo 'hello world' > hello7.txt"}
+var yiiSteps = []string{}
+
+var wpSteps = []string{}
 
 func main() {
 
 	// Initialization
 	project := new(project)
 
+	// Let's build our project!
 	project.assemblyLine()
 
 	// SSH connection config
@@ -45,6 +43,9 @@ func main() {
 		},
 	}
 
+	// Now we need to know which instalation we going to make.
+	// And once we get to know it, let's load the setup with
+	// the aproppriate set of files and commands.
 	if project.typ.name == "Yii" {
 		project.typ.program.setup = yiiSteps
 	} else {
@@ -168,6 +169,20 @@ func (p *project) connect(config *ssh.ClientConfig) {
 	checkError("Failed to dial: ", err)
 	log.Printf("Connection established.\n")
 
+	session, err := conn.NewSession()
+	checkError("Faleid to build session: ", err)
+
+	var stdoutBuf bytes.Buffer
+	session.Stdout = &stdoutBuf
+
+	// gitconfig
+	fileContent := readFile("gitconfig.txt")
+	if err := session.Run(fileContent); err != nil {
+		log.Fatal("Error on setting .gitconfig", err.Error())
+	}
+	session.Close()
+	log.Printf("gitconfig done.")
+
 	for step := range p.typ.program.setup {
 		p.install(step, conn)
 	}
@@ -177,7 +192,7 @@ func (p *project) connect(config *ssh.ClientConfig) {
 func (p *project) install(step int, conn *ssh.Client) {
 
 	session, err := conn.NewSession()
-	checkError("Failed to build the session: ", err)
+	checkError("Failed to build session: ", err)
 
 	defer session.Close()
 
@@ -189,4 +204,10 @@ func (p *project) install(step int, conn *ssh.Client) {
 	if err := session.Run(p.typ.program.setup[step]); err != nil {
 		log.Fatal("Error on command execution", err.Error())
 	}
+}
+
+func readFile(file string) string {
+	data, err := ioutil.ReadFile(file)
+	checkError("Error on reading file.", err)
+	return string(data[:len(data)])
 }
