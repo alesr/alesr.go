@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// A project is made of project field which has a program on it.
+// A project is made of project fields which has a program on it.
 type program struct {
 	setup []string
 }
@@ -23,9 +23,7 @@ type project struct {
 	projectname, hostname, pwd, port, typ projectField
 }
 
-var yiiSteps = []string{}
 
-var wpSteps = []string{}
 
 func main() {
 
@@ -42,6 +40,22 @@ func main() {
 			ssh.Password(project.pwd.name),
 		},
 	}
+
+	var yiiSteps = []string{}
+
+	var wpSteps = []string{
+		"echo -e '[User]\nname = Pipi, server girl' > .gitconfig",
+		// "cd ~/www/www/ && git init",
+		// "git add . && git commit -m 'on the beginning was the commit'",
+		// "cd ~/private/ && mkdir repos && cd repos",
+		// "mkdir projectname_hub.git && cd projectname_hub.git && git --bare init",
+		// "cd ~/www/www && git remote add hub ~/private/repos/projectname_hub.git && git push hub master",
+		// "cd ~/private/repos/projectname_hub.git/hooks && touch post-update",
+		// "scp post-update-wp " + project.projectname.name + "@" + project.hostname.name + ":/home/" + project.projectname.name + "/private/repos/" + project.projectname.name + "_hub.git/hooks/post-update",
+
+	}
+
+
 
 	// Now we need to know which instalation we going to make.
 	// And once we get to know it, let's load the setup with
@@ -168,20 +182,6 @@ func (p *project) connect(config *ssh.ClientConfig) {
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", p.hostname.name, p.port.name), config)
 	checkError("Failed to dial: ", err)
 	log.Printf("Connection established.\n")
-
-	session, err := conn.NewSession()
-	checkError("Faleid to build session: ", err)
-
-	var stdoutBuf bytes.Buffer
-	session.Stdout = &stdoutBuf
-
-	// gitconfig
-	fileContent := readFile("gitconfig.txt")
-	if err := session.Run(fileContent); err != nil {
-		log.Fatal("Error on setting .gitconfig", err.Error())
-	}
-	session.Close()
-	log.Printf("gitconfig done.")
 
 	for step := range p.typ.program.setup {
 		p.install(step, conn)
