@@ -46,9 +46,9 @@ func main() {
 		"cd ~/www/www/ && git init",
 		"cd ~/www/www/ && git add . ",
 		"cd ~/www/www/ && git commit -m 'on the beginning was the commit'",
-		"cd ~/private/ && mkdir repos && cd repos && mkdir projectname_hub.git && cd projectname_hub.git && git --bare init",
-		"cd ~/www/www && git remote add hub ~/private/repos/projectname_hub.git && git push hub master",
-		"cd ~/private/repos/projectname_hub.git/hooks && touch post-update",
+		"cd ~/private/ && mkdir repos && cd repos && mkdir " + project.projectname.name + "_hub.git && cd " + project.projectname.name + "_hub.git && git --bare init",
+		"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git && git push hub master",
+		"cd ~/private/repos/" + project.projectname.name + "_hub.git/hooks && touch post-update",
 		"scp post-update-wp " + project.projectname.name + "@" + project.hostname.name + ":/home/" + project.projectname.name + "/private/repos/" + project.projectname.name + "_hub.git/hooks/post-update",
 	}
 
@@ -189,9 +189,13 @@ func (p *project) install(step int, conn *ssh.Client) {
 
 	log.Printf("Executing command: %s", p.typ.program.setup[step])
 
-	if err := session.Run(p.typ.program.setup[step]); err != nil {
-		log.Fatal("Error on command execution", err.Error())
-	}
+	session.Run(p.typ.program.setup[step])
+
+	// if err := session.Run(p.typ.program.setup[step]); err != nil {
+	// 	fmt.Println(session.Stdout)
+	// 	log.Fatal("Error on command execution: ", err.Error())
+	// }
+
 }
 
 func readFile(file string) string {
