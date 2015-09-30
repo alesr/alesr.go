@@ -34,16 +34,6 @@ func main() {
 	// Let's build our project!
 	project.assemblyLine()
 
-
-
-	// SSH connection config
-	config := &ssh.ClientConfig{
-		User: project.projectname.name,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(project.pwd.name),
-		},
-	}
-
 	// Now we need to know which instalation we going to make.
 	// And once we get to know it, let's load the setup with
 	// the aproppriate set of files and commands.
@@ -66,6 +56,16 @@ func main() {
 		}
 
 		project.typ.program.setup = wpSteps
+	}
+
+	fmt.Println(project.port.name)
+
+	// SSH connection config
+	config := &ssh.ClientConfig{
+		User: project.projectname.name,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(project.pwd.name),
+		},
 	}
 
 	project.connect(config)
