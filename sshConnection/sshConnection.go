@@ -56,6 +56,7 @@ func main() {
 		"cd ~/private/ && mkdir repos && cd repos && mkdir " + project.projectname.name + "_hub.git && cd " + project.projectname.name + "_hub.git && git --bare init",
 		"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git && git push hub master",
 		"post-update configuration",
+		"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git/hooks && chmod 755 post-update",
 	}
 
 	if project.typ.name == "Yii" {
