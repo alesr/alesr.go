@@ -12,7 +12,8 @@ import (
 
 // A project is made of project fields which has a program on it.
 type program struct {
-	setup []string
+	setup              []string
+	postUpdateFilename string
 }
 
 type projectField struct {
@@ -34,7 +35,6 @@ func main() {
 	// Let's build our project!
 	project.assemblyLine()
 
-
 	// SSH connection config
 	config := &ssh.ClientConfig{
 		User: project.projectname.name,
@@ -46,28 +46,34 @@ func main() {
 	// Now we need to know which instalation we going to make.
 	// And once we get to know it, let's load the setup with
 	// the aproppriate set of files and commands.
-	var yiiSteps []string
+
+	// var yiiSteps, wpSteps []string
+	commonSteps := []string{
+		"echo -e '[User]\nname = Pipi, server girl' > .gitconfig",
+		"cd ~/www/www/ && git init",
+		"cd ~/www/www/ && git add . ",
+		"cd ~/www/www/ && git commit -m 'on the beginning was the commit'",
+		"cd ~/private/ && mkdir repos && cd repos && mkdir " + project.projectname.name + "_hub.git && cd " + project.projectname.name + "_hub.git && git --bare init",
+		"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git && git push hub master",
+		"post-update configuration",
+	}
 
 	if project.typ.name == "Yii" {
+
+		// Loading common steps into the selected setup
+		yiiSteps := commonSteps
 		project.typ.program.setup = yiiSteps
+		project.typ.program.postUpdateFilename = "post-update-yii"
+
 	} else {
 
-		postUpdateContent = readFile("post-update-wp")
-
-		wpSteps := []string{
-			"echo -e '[User]\nname = Pipi, server girl' > .gitconfig",
-			"cd ~/www/www/ && git init",
-			"cd ~/www/www/ && git add . ",
-			"cd ~/www/www/ && git commit -m 'on the beginning was the commit'",
-			"cd ~/private/ && mkdir repos && cd repos && mkdir " + project.projectname.name + "_hub.git && cd " + project.projectname.name + "_hub.git && git --bare init",
-			"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git && git push hub master",
-		}
-
+		// Loading common steps into the selected setup
+		wpSteps := commonSteps
 		project.typ.program.setup = wpSteps
+		project.typ.program.postUpdateFilename = "post-update-wp"
 	}
 
 	project.connect(config)
-
 }
 
 func (p *project) assemblyLine() {
@@ -189,10 +195,13 @@ func (p *project) connect(config *ssh.ClientConfig) {
 
 	// Loops over the slice of commands to be executed on the remote.
 	for step := range p.typ.program.setup {
+
+		if p.typ.program.setup[step] == "post-update configuration" {
+			p.secureCopy(conn)
+		}
+
 		p.install(step, conn)
 	}
-
-	p.runLocalCommand(conn)
 }
 
 func (p *project) install(step int, conn *ssh.Client) {
@@ -226,23 +235,26 @@ func readFile(file string) string {
 	return string(data[:len(data)])
 }
 
-func (p *project) runLocalCommand(conn *ssh.Client) {
+// Secure Copy a file from local machine to remote host.
+func (p *project) secureCopy(conn *ssh.Client) {
 
 	session, err := conn.NewSession()
-	if err != nil {
-		panic("Failed to create session: " + err.Error())
-	}
+	checkError("Failed to build session: ", err)
 	defer session.Close()
+
+	var stdoutBuf bytes.Buffer
+	session.Stdout = &stdoutBuf
 
 	go func() {
 		w, _ := session.StdinPipe()
 		defer w.Close()
-		content := readFile("post-update-wp")
+		content := readFile(p.typ.program.postUpdateFilename)
 		fmt.Fprintln(w, "C0644", len(content), "post-update")
 		fmt.Fprint(w, content)
 		fmt.Fprint(w, "\x00")
 	}()
-	if err := session.Run("/usr/bin/scp -qrt ~/private/repos/" + p.projectname.name + "_hub.git/hooks"); err != nil {
-		panic("Failed to run: " + err.Error())
+
+	if err := session.Run("scp -qrt ~/private/repos/" + p.projectname.name + "_hub.git/hooks"); err != nil {
+		log.Fatal("Failed to run SCP: " + err.Error())
 	}
 }
