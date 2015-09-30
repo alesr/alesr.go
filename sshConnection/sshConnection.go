@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"strings"
-	// "os/exec"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -28,11 +27,21 @@ type project struct {
 var postUpdateContent string
 
 func main() {
+
 	// Initialization
 	project := new(project)
 
 	// Let's build our project!
 	project.assemblyLine()
+
+
+	// SSH connection config
+	config := &ssh.ClientConfig{
+		User: project.projectname.name,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(project.pwd.name),
+		},
+	}
 
 	// Now we need to know which instalation we going to make.
 	// And once we get to know it, let's load the setup with
@@ -52,20 +61,9 @@ func main() {
 			"cd ~/www/www/ && git commit -m 'on the beginning was the commit'",
 			"cd ~/private/ && mkdir repos && cd repos && mkdir " + project.projectname.name + "_hub.git && cd " + project.projectname.name + "_hub.git && git --bare init",
 			"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git && git push hub master",
-			// "cd ~/private/repos/" + project.projectname.name + "_hub.git/hooks && echo " + postUpdateContent + " > post-update",
 		}
 
 		project.typ.program.setup = wpSteps
-	}
-
-	fmt.Println(project.port.name)
-
-	// SSH connection config
-	config := &ssh.ClientConfig{
-		User: project.projectname.name,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(project.pwd.name),
-		},
 	}
 
 	project.connect(config)
@@ -126,7 +124,8 @@ func ask4Input(field *projectField) {
 		log.Fatal(field.errorMsg, err)
 	}
 
-	//checkInput(field, input)
+	// After we've got the input we must check if it's valid.
+	checkInput(field, input)
 }
 
 // A simple error checker.
@@ -193,7 +192,7 @@ func (p *project) connect(config *ssh.ClientConfig) {
 		p.install(step, conn)
 	}
 
-	//p.runLocalCommand(conn)
+	p.runLocalCommand(conn)
 }
 
 func (p *project) install(step int, conn *ssh.Client) {
@@ -227,39 +226,23 @@ func readFile(file string) string {
 	return string(data[:len(data)])
 }
 
-// 	func (p *project)runLocalCommand(conn *ssh.Client)  {
-// //
-// // 	//fmt.Println("scp post-update " + p.projectname.name + "@" + p.hostname.name + ":/home/" + p.projectname.name + "/private/repos/" + p.projectname.name + "_hub.git/hooks/post-update")
-// // 	// Create an *exec.Cmd
-// // 	// cmd := exec.Command("scp ./post-update " + p.projectname.name + "@" + p.hostname.name + ":/home/" + p.projectname.name + "/private/repos/" + p.projectname.name + "_hub.git/hooks/post-update")
-// //
-// // 	// Stdout buffer
-// // 	cmdOutput := &bytes.Buffer{}
-// // 	// Attach buffer to command
-// // 	cmd.Stdout = cmdOutput
-// //
-// // 	if err := cmd.Run(); err != nil {
-// // 			log.Fatal(err)
-// // 	} // will wait for command to return
-// //
-// // 	if len(cmdOutput.Bytes()) > 0 {
-// // 		fmt.Printf("==> Output: %s\n", string(cmdOutput.Bytes()))
-// // 	}
-// //
-// 	session, err := conn.NewSession()
-// 	if err != nil {
-// 		panic("Failed to create session: " + err.Error())
-// 	}
-// 	defer session.Close()
-// 	go func() {
-// 		w, _ := session.StdinPipe()
-// 		defer w.Close()
-// 		content := readFile("post-update-wp")
-// 		fmt.Fprint(w, content)
-// 		fmt.Fprint(w, "\x00")
-// 	}()
-// 	if err := session.Run("/usr/bin/scp -tr ./"); err != nil {
-// 		panic("Failed to run: " + err.Error())
-// 	}
-// //
-// }
+func (p *project) runLocalCommand(conn *ssh.Client) {
+
+	session, err := conn.NewSession()
+	if err != nil {
+		panic("Failed to create session: " + err.Error())
+	}
+	defer session.Close()
+
+	go func() {
+		w, _ := session.StdinPipe()
+		defer w.Close()
+		content := readFile("post-update-wp")
+		fmt.Fprintln(w, "C0644", len(content), "post-update")
+		fmt.Fprint(w, content)
+		fmt.Fprint(w, "\x00")
+	}()
+	if err := session.Run("/usr/bin/scp -qrt ~/private/repos/" + p.projectname.name + "_hub.git/hooks"); err != nil {
+		panic("Failed to run: " + err.Error())
+	}
+}
