@@ -3,9 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"github.com/alesr/errorUtil"
+	"github.com/alesr/fileUtil"
 	"log"
+	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -59,18 +63,20 @@ func main() {
 		project.typ.program.setup = []string{
 			"echo -e '[User]\nname = Pipi, server girl' > .gitconfig",
 			"cd ~/www/www/ && git init",
-			"cd ~/www/www/ && git add . ",
+			"cd ~/www/www/ && touch readme.txt && git add . ",
 			"cd ~/www/www/ && git commit -m 'on the beginning was the commit'",
 			"cd ~/private/ && mkdir repos && cd repos && mkdir " + project.projectname.name + "_hub.git && cd " + project.projectname.name + "_hub.git && git --bare init",
 			"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git && git push hub master",
 			"post-update configuration",
 			"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git/hooks && chmod 755 post-update",
-			"mkdir ~/sites/" + project.projectname.name + ".dev/",
+			project.projectname.name + ".dev",
+			"git clone",
 		}
 		project.typ.program.postUpdateFilename = "post-update-wp"
 	}
-
 	project.connect(config)
+
+	log.Println("Environment configuration done.")
 }
 
 func (p *project) assemblyLine() {
@@ -131,13 +137,6 @@ func ask4Input(field *projectField) {
 	checkInput(field, input)
 }
 
-// A simple error checker.
-func checkError(msg string, err error) {
-	if err != nil {
-		log.Fatal(msg, err.Error())
-	}
-}
-
 // Check invalid parameters on the user input.
 func checkInput(field *projectField, input string) {
 
@@ -183,11 +182,11 @@ func (p *project) connect(config *ssh.ClientConfig) {
 	log.Printf("Trying connection...\n")
 
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", p.hostname.name, p.port.name), config)
-	checkError("Failed to dial: ", err)
+	errorUtil.CheckError("Failed to dial: ", err)
 	log.Printf("Connection established.\n")
 
 	session, err := conn.NewSession()
-	checkError("Failed to build session: ", err)
+	errorUtil.CheckError("Failed to build session: ", err)
 	defer session.Close()
 
 	// Loops over the slice of commands to be executed on the remote.
@@ -195,20 +194,65 @@ func (p *project) connect(config *ssh.ClientConfig) {
 
 		if p.typ.program.setup[step] == "post-update configuration" {
 			p.secureCopy(conn)
-		} else if p.typ.program.setup[step] == "mkdir ~/sites/"+p.projectname.name+".dev/" {
-			p.installOnLocal(step)
-
+		} else if p.typ.program.setup[step] == p.projectname.name+".dev" {
+			p.makeDirOnLocal(step)
+		} else if p.typ.program.setup[step] == "git clone" {
+			p.gitOnLocal(step)
 		} else {
 			p.installOnRemote(step, conn)
 		}
 	}
 }
 
+func (p *project) gitOnLocal(step int) {
+	switch p.typ.program.setup[step] {
+	case "git clone":
+		p.installOnLocal(step)
+	}
+}
+
 func (p *project) installOnLocal(step int) {
-	// cmd := exec.Command(p.typ.program.setup[step])
-	cmd := exec.Command("pwd")
-	err := cmd.Run()
-	checkError("Failed to run "+p.typ.program.setup[step], err)
+	homeDir := getUserHomeDir()
+
+	if err := os.Chdir(homeDir + string(filepath.Separator) + "sites" + string(filepath.Separator) + p.projectname.name + ".dev/"); err != nil {
+		log.Fatal("Failed to change directory.")
+	}
+
+	repo := "ssh://" + p.projectname.name + "@" + p.hostname.name + "/home/" + p.projectname.name + "/private/repos/" + p.projectname.name + "_hub.git"
+
+	cmd := exec.Command("git", "clone", repo, ".")
+	if err := cmd.Run(); err != nil {
+		log.Fatal("Failed to execute git clone: ", err)
+	}
+
+}
+
+// Creates a directory on the local machine. Case the directory already exists
+// remove the old one and runs the function again.
+func (p *project) makeDirOnLocal(step int) {
+
+	log.Println("Creating directory...")
+
+	// Get the user home directory path.
+	homeDir := getUserHomeDir()
+
+	// The dir we want to create.
+	dir := homeDir + string(filepath.Separator) + "sites" + string(filepath.Separator) + p.typ.program.setup[step]
+
+	// Check if the directory already exists.
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err := os.Mkdir(dir, 0755)
+		errorUtil.CheckError("Failed to create directory.", err)
+		log.Println(dir + " successfully created.")
+	} else {
+		log.Println(dir + " already exist.\nRemoving old and creating new...")
+
+		// Remove the old one.
+		if err := os.RemoveAll(dir); err != nil {
+			log.Fatalf("Error removing %s\n%s", dir, err)
+		}
+		p.makeDirOnLocal(step)
+	}
 }
 
 func (p *project) installOnRemote(step int, conn *ssh.Client) {
@@ -220,7 +264,7 @@ func (p *project) installOnRemote(step int, conn *ssh.Client) {
 
 	// Creates a session over the ssh connection to execute the commands
 	session, err := conn.NewSession()
-	checkError("Failed to build session: ", err)
+	errorUtil.CheckError("Failed to build session: ", err)
 	defer session.Close()
 
 	var stdoutBuf bytes.Buffer
@@ -236,16 +280,10 @@ func (p *project) installOnRemote(step int, conn *ssh.Client) {
 	}
 }
 
-func readFile(file string) string {
-	data, err := ioutil.ReadFile(file)
-	checkError("Error on reading file.", err)
-	return string(data[:len(data)])
-}
-
 // Secure Copy a file from local machine to remote host.
 func (p *project) secureCopy(conn *ssh.Client) {
 	session, err := conn.NewSession()
-	checkError("Failed to build session: ", err)
+	errorUtil.CheckError("Failed to build session: ", err)
 	defer session.Close()
 
 	var stdoutBuf bytes.Buffer
@@ -254,7 +292,7 @@ func (p *project) secureCopy(conn *ssh.Client) {
 	go func() {
 		w, _ := session.StdinPipe()
 		defer w.Close()
-		content := readFile(p.typ.program.postUpdateFilename)
+		content := fileUtil.ReadFile(p.typ.program.postUpdateFilename)
 		fmt.Fprintln(w, "C0644", len(content), "post-update")
 		fmt.Fprint(w, content)
 		fmt.Fprint(w, "\x00")
@@ -263,4 +301,11 @@ func (p *project) secureCopy(conn *ssh.Client) {
 	if err := session.Run("scp -qrt ~/private/repos/" + p.projectname.name + "_hub.git/hooks"); err != nil {
 		log.Fatal("Failed to run SCP: " + err.Error())
 	}
+}
+
+func getUserHomeDir() string {
+	usr, err := user.Current()
+	errorUtil.CheckError("Failed to locate user home directory ", err)
+
+	return usr.HomeDir
 }
