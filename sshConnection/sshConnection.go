@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os/exec"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -46,31 +47,26 @@ func main() {
 	// Now we need to know which instalation we going to make.
 	// And once we get to know it, let's load the setup with
 	// the aproppriate set of files and commands.
-
-	// var yiiSteps, wpSteps []string
-	commonSteps := []string{
-		"echo -e '[User]\nname = Pipi, server girl' > .gitconfig",
-		"cd ~/www/www/ && git init",
-		"cd ~/www/www/ && git add . ",
-		"cd ~/www/www/ && git commit -m 'on the beginning was the commit'",
-		"cd ~/private/ && mkdir repos && cd repos && mkdir " + project.projectname.name + "_hub.git && cd " + project.projectname.name + "_hub.git && git --bare init",
-		"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git && git push hub master",
-		"post-update configuration",
-		"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git/hooks && chmod 755 post-update",
-	}
-
 	if project.typ.name == "Yii" {
 
 		// Loading common steps into the selected setup
-		yiiSteps := commonSteps
-		project.typ.program.setup = yiiSteps
+		project.typ.program.setup = []string{}
 		project.typ.program.postUpdateFilename = "post-update-yii"
 
 	} else {
 
 		// Loading common steps into the selected setup
-		wpSteps := commonSteps
-		project.typ.program.setup = wpSteps
+		project.typ.program.setup = []string{
+			"echo -e '[User]\nname = Pipi, server girl' > .gitconfig",
+			"cd ~/www/www/ && git init",
+			"cd ~/www/www/ && git add . ",
+			"cd ~/www/www/ && git commit -m 'on the beginning was the commit'",
+			"cd ~/private/ && mkdir repos && cd repos && mkdir " + project.projectname.name + "_hub.git && cd " + project.projectname.name + "_hub.git && git --bare init",
+			"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git && git push hub master",
+			"post-update configuration",
+			"cd ~/www/www && git remote add hub ~/private/repos/" + project.projectname.name + "_hub.git/hooks && chmod 755 post-update",
+			"mkdir ~/sites/" + project.projectname.name + ".dev/",
+		}
 		project.typ.program.postUpdateFilename = "post-update-wp"
 	}
 
@@ -199,13 +195,23 @@ func (p *project) connect(config *ssh.ClientConfig) {
 
 		if p.typ.program.setup[step] == "post-update configuration" {
 			p.secureCopy(conn)
-		}
+		} else if p.typ.program.setup[step] == "mkdir ~/sites/"+p.projectname.name+".dev/" {
+			p.installOnLocal(step)
 
-		p.install(step, conn)
+		} else {
+			p.installOnRemote(step, conn)
+		}
 	}
 }
 
-func (p *project) install(step int, conn *ssh.Client) {
+func (p *project) installOnLocal(step int) {
+	// cmd := exec.Command(p.typ.program.setup[step])
+	cmd := exec.Command("pwd")
+	err := cmd.Run()
+	checkError("Failed to run "+p.typ.program.setup[step], err)
+}
+
+func (p *project) installOnRemote(step int, conn *ssh.Client) {
 
 	// Git and some other programs can send us an unsuccessful exit (< 0)
 	// even if the command was successfully executed on the remote shell.
@@ -238,7 +244,6 @@ func readFile(file string) string {
 
 // Secure Copy a file from local machine to remote host.
 func (p *project) secureCopy(conn *ssh.Client) {
-
 	session, err := conn.NewSession()
 	checkError("Failed to build session: ", err)
 	defer session.Close()
